@@ -1,0 +1,78 @@
+# ==============================
+# Compiled object files
+# ==============================
+*.o
+*.slo
+*.lo
+
+# ==============================
+# Precompiled Headers
+# ==============================
+*.gch
+*.pch
+
+# ==============================
+# Linker files
+# ==============================
+*.ilk
+*.pdb
+
+# ==============================
+# Libraries
+# ==============================
+*.a
+*.la
+*.lai
+*.so
+*.dylib
+
+
+# ==============================
+# Executables
+# ==============================
+*.out
+*.app
+
+# ==============================
+# Debug information files
+# ==============================
+*.dwo
+
+# ==============================
+# IDE/Editor files
+# ==============================
+*.user
+*.opensdf
+*.sdf
+*.ipch
+*.db
+*.VC.db
+*.idea/
+*.vscode/
+Coursework2/.vs/
+
+
+# ==============================
+# Build directories (relative to repo root)
+# ==============================
+Coursework2/coursework2/Debug/
+Coursework2/coursework2/Release/
+Coursework2/coursework2/build/
+Coursework2/coursework2/bin/
+Coursework2/coursework2/x64/
+Coursework2/OpenGL/include/glm/doc/
+
+# ==============================
+# CMake generated files
+# ==============================
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+Makefile
+
+# ==============================
+# Misc
+# ==============================
+*.log
+*.tmp
+*.temp
