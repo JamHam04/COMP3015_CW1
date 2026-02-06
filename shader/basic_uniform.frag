@@ -2,16 +2,18 @@
 
 in vec3 Position;
 in vec3 Normal;
+in vec2 TexCoord;
 
 
 layout (location = 0) out vec4 FragColor;
+uniform int NumLights;
 
 uniform struct LightInfo {
     vec4 Position;
     vec3 La; // ambient
     vec3 Ld; // diffuse
     vec3 L; // intensity
-} Light;
+} Lights[2];
 
 uniform struct MaterialInfo {
     vec3 Ka; // ambient
@@ -21,22 +23,30 @@ uniform struct MaterialInfo {
 } Material;
 
 
-vec3 blinnPhong(vec3 position, vec3 normal) {
+
+vec3 blinnPhong(LightInfo light, vec3 position, vec3 normal) {
     vec3 diffuse = vec3(0), specular = vec3(0);
-    vec3 ambient = Light.La * Material.Ka;
-    vec3 s = normalize(Light.Position.xyz - position);
+    vec3 ambient = light.La * Material.Ka;
+
+    vec3 s = normalize(light.Position.xyz - position);
+
 
     float sDotN = max(dot(s, normal), 0.0);
-    diffuse = Light.Ld * Material.Kd * sDotN;
+    diffuse = light.Ld * Material.Kd * sDotN;
     if (sDotN > 0.0) {
         vec3 v = normalize(-position);
         vec3 h = normalize(s + v);
         specular = Material.Ks * pow(max(dot(h, normal), 0.0), Material.Shininess);
     }
-    return ambient + (diffuse + specular) * Light.L;
+    return ambient + (diffuse + specular) * light.L;
 }
 
 void main()
 {
-    FragColor = vec4(blinnPhong(Position, normalize(Normal)), 1.0);
+    vec3 color = vec3(0);
+    for (int i = 0; i < NumLights; i++) {
+        color += blinnPhong(Lights[i], Position, normalize(Normal));
+    }
+    FragColor = vec4(color, 1.0);
+
 }

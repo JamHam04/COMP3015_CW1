@@ -22,6 +22,8 @@ SceneBasic_Uniform::SceneBasic_Uniform() : plane(50.0f, 50.0f, 1, 1) {}
 
 void SceneBasic_Uniform::initScene()
 {
+
+	glEnable(GL_DEPTH_TEST);
 	// Camera View
 	vec3 cameraPos(0.0f, 4.0f, 6.0f);
 	vec3 cameraTarget(0.0f, 0.2f, 0.0f);
@@ -33,11 +35,19 @@ void SceneBasic_Uniform::initScene()
 	projection = glm::perspective(glm::radians(70.0f), (float)width / height, 0.3f, 100.0f);
 
 	// Light properties
-	prog.setUniform("Light.L", vec3(0.9f)); // Light intensity
-	prog.setUniform("Light.La", vec3(0.6f)); // Ambient light intensity
-	prog.setUniform("Light.Ld", vec3(0.9f)); // Diffuse light intensity
+	prog.setUniform("NumLights", 2); // Number of lights
+
+	prog.setUniform("Lights[0].L", vec3(0.9f)); // Light intensity
+	prog.setUniform("Lights[0].La", vec3(0.6f)); // Ambient light intensity
+	prog.setUniform("Lights[0].Ld", vec3(0.9f)); // Diffuse light intensity
+
+	prog.setUniform("Lights[1].L", vec3(0.6f)); // Light intensity
+	prog.setUniform("Lights[1].La", vec3(0.6f)); // Ambient light intensity
+	prog.setUniform("Lights[1].Ld", vec3(0.9f)); // Diffuse light intensity
 
 	
+
+
 
     
 }
@@ -65,8 +75,10 @@ void SceneBasic_Uniform::render()
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	// Set light position
-	vec4 lightPos = vec4(0.0f, 1.0f, 0.0f, 1.0f);
-	prog.setUniform("Light.Position", view * lightPos);
+	vec4 lightPos = vec4(-5.0f, 10.0f, -5.0f, 1.0f);
+	vec4 lightPos2 = vec4(0.0f, 1.0f, 0.0f, 1.0f);
+	prog.setUniform("Lights[0].Position", view * lightPos);
+	prog.setUniform("Lights[1].Position", view * lightPos2);
 
 	// Set material properties
 	vec3 diffuseColor = vec3(0.5f, 0.0f, 0.0f); 
@@ -79,10 +91,11 @@ void SceneBasic_Uniform::render()
 	prog.setUniform("Material.Shininess", 100.0f);
 
 
-
 	model = mat4(1.0f);
 	setMatrices();
 	plane.render();
+
+
 }
 
 void SceneBasic_Uniform::resize(int w, int h)
