@@ -1,69 +1,48 @@
 # ==============================
-# Compiled object files
+# Visual Studio files
 # ==============================
-*.o
-*.slo
-*.lo
+.vs/
+*.VC.db
+*.VC.VC.opendb
+*.suo
+*.user
+*.opendb
+*.ipch
 
 # ==============================
-# Precompiled Headers
+# Build results
+# ==============================
+[Bb]in/
+[Oo]bj/
+x64/
+Debug/
+Release/
+*.o
+*.obj
+*.exe
+*.dll
+*.ilk
+*.pdb
+*.tlog
+
+# ==============================
+# Compiled headers
 # ==============================
 *.gch
 *.pch
 
 # ==============================
-# Linker files
-# ==============================
-*.ilk
-*.pdb
-
-# ==============================
 # Libraries
 # ==============================
+*.lib
 *.a
 *.la
 *.lai
 *.so
 *.dylib
 
-
 # ==============================
-# Executables
-# ==============================
-*.out
-*.app
-
-# ==============================
-# Debug information files
-# ==============================
-*.dwo
-
-# ==============================
-# IDE/Editor files
-# ==============================
-*.user
-*.opensdf
-*.sdf
-*.ipch
-*.db
-*.VC.db
-*.idea/
-*.vscode/
-Coursework2/.vs/
-
-
-# ==============================
-# Build directories (relative to repo root)
-# ==============================
-Coursework2/coursework2/Debug/
-Coursework2/coursework2/Release/
-Coursework2/coursework2/build/
-Coursework2/coursework2/bin/
-Coursework2/coursework2/x64/
-Coursework2/OpenGL/include/glm/doc/
-
-# ==============================
-# CMake generated files
+# CMake
 # ==============================
 CMakeFiles/
 CMakeCache.txt
@@ -71,8 +50,10 @@ cmake_install.cmake
 Makefile
 
 # ==============================
-# Misc
+# Editor/IDE
 # ==============================
+*.idea/
+*.vscode/
 *.log
 *.tmp
 *.temp

@@ -11,6 +11,8 @@ using std::cerr;
 using std::endl;
 
 #include "helper/glutils.h"
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/glm.hpp>
 
 using glm::vec3;
 using glm::vec4;
@@ -21,7 +23,14 @@ SceneBasic_Uniform::SceneBasic_Uniform() : angle(0.0f) {}
 
 void SceneBasic_Uniform::initScene()
 {
+	
     compile();
+	mat4 model = glm::mat4(1.0f);
+	mat4 view = glm::lookAt(glm::vec3(0.0f, 0.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+
+	
+	
+
     
 }
 
@@ -45,14 +54,23 @@ void SceneBasic_Uniform::update( float t )
 
 void SceneBasic_Uniform::render()
 {
-    glClear(GL_COLOR_BUFFER_BIT);
-    
-    
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    glBindVertexArray(vaoHandle);
-    glDrawArrays(GL_TRIANGLES, 0, 3 );
+	// Set light position
+	vec4 lightPos = vec4(0.0f, 1.0f, 0.0f, 1.0f);
+	prog.setUniform("Light.Position", lightPos);
 
-    glBindVertexArray(0);
+	// Set material properties
+	vec3 diffuseColor = vec3(0.5f, 0.0f, 0.0f);
+	vec3 specularColor = vec3(1.0f, 1.0f, 1.0f);
+	vec3 ambientColor = vec3(0.1f, 0.0f, 0.0f);
+
+	prog.setUniform("Material.Kd", diffuseColor);
+	prog.setUniform("Material.Ks", specularColor);
+	prog.setUniform("Material.Ka", ambientColor);
+	prog.setUniform("Material.Shininess", 100.0f);
+
+
 }
 
 void SceneBasic_Uniform::resize(int w, int h)
