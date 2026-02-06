@@ -1,5 +1,7 @@
 D:\GitHub\COMP3015_CW1\dependencies\OpenGL\src\glad.c;D:\GitHub\COMP3015_CW1\COMP3015_CW1\x64\Debug\glad.obj
 D:\GitHub\COMP3015_CW1\helper\glslprogram.cpp;D:\GitHub\COMP3015_CW1\COMP3015_CW1\x64\Debug\glslprogram.obj
 D:\GitHub\COMP3015_CW1\helper\glutils.cpp;D:\GitHub\COMP3015_CW1\COMP3015_CW1\x64\Debug\glutils.obj
+D:\GitHub\COMP3015_CW1\helper\plane.cpp;D:\GitHub\COMP3015_CW1\COMP3015_CW1\x64\Debug\plane.obj
+D:\GitHub\COMP3015_CW1\helper\trianglemesh.cpp;D:\GitHub\COMP3015_CW1\COMP3015_CW1\x64\Debug\trianglemesh.obj
 D:\GitHub\COMP3015_CW1\main.cpp;D:\GitHub\COMP3015_CW1\COMP3015_CW1\x64\Debug\main.obj
 D:\GitHub\COMP3015_CW1\scenebasic_uniform.cpp;D:\GitHub\COMP3015_CW1\COMP3015_CW1\x64\Debug\scenebasic_uniform.obj

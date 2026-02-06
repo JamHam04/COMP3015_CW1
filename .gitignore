@@ -2,6 +2,7 @@
 # Visual Studio files
 # ==============================
 .vs/
+**/.vs/
 *.VC.db
 *.VC.VC.opendb
 *.suo
@@ -16,6 +17,9 @@
 [Oo]bj/
 x64/
 Debug/
+debug/
+x64/Debug/
+x64/debug/
 Release/
 *.o
 *.obj
@@ -24,6 +28,8 @@ Release/
 *.ilk
 *.pdb
 *.tlog
+
+
 
 # ==============================
 # Compiled headers
