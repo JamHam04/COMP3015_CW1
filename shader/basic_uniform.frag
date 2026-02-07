@@ -6,6 +6,7 @@ in vec2 TexCoord;
 
 // Textures
 layout (binding = 0) uniform sampler2D floorTexture;
+layout (binding = 1) uniform sampler2D damageTexture;
 
 
 layout (location = 0) out vec4 FragColor;
@@ -29,7 +30,11 @@ uniform struct MaterialInfo {
 vec3 blinnPhong(LightInfo light, vec3 position, vec3 normal) {
     vec3 diffuse = vec3(0), specular = vec3(0);
 
-    vec3 texColor = texture(floorTexture, TexCoord).rgb;
+    vec4 floorTextureColor = texture(floorTexture, TexCoord);
+    vec4 damageTextureColor = texture(damageTexture, TexCoord);
+
+    vec3 texColor = mix(floorTextureColor.rgb, damageTextureColor.rgb, damageTextureColor.a);
+    //vec3 texColor = texture(floorTexture, TexCoord).rgb;
 
     vec3 ambient = light.La * texColor;
     vec3 s = normalize(light.Position.xyz - position);
