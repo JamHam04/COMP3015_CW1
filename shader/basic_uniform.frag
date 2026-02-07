@@ -7,6 +7,7 @@ in vec2 TexCoord;
 // Textures
 layout (binding = 0) uniform sampler2D floorTexture;
 layout (binding = 1) uniform sampler2D damageTexture;
+layout (binding = 2) uniform sampler2D normalTexture;
 
 
 layout (location = 0) out vec4 FragColor;
@@ -52,9 +53,15 @@ vec3 blinnPhong(LightInfo light, vec3 position, vec3 normal) {
 void main()
 {
     vec3 color = vec3(0);
+
+    // Normal mapping
+    vec3 normTexture = texture(normalTexture, TexCoord).rgb;
+    normTexture = 2.0 * normTexture - 1.0;
+
+    // Lighting
     for (int i = 0; i < NumLights; i++) {
-        color += blinnPhong(Lights[i], Position, normalize(Normal));
+        color += blinnPhong(Lights[i], Position, normalize(normTexture));
     }
-    FragColor = vec4(color, 1.0);
+    FragColor = vec4(color, 1.0); 
 
 }

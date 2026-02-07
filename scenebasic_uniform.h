@@ -26,6 +26,7 @@ private:
 	GLuint floorTexture;
 	GLuint wallTexture;
 	GLuint damageTexture;
+	GLuint normalTexture;
 
 public:
     SceneBasic_Uniform();

@@ -51,9 +51,13 @@ void SceneBasic_Uniform::initScene()
 	wallTexture = Texture::loadTexture("media/texture/broken_wall_diff_4k.jpg");
 
 	damageTexture = Texture::loadTexture("media/texture/Damage.png");
+	normalTexture = Texture::loadTexture("media/texture/asphalt_01_nor_gl_4k.jpg");
 
 	glActiveTexture(GL_TEXTURE1);
 	glBindTexture(GL_TEXTURE_2D, damageTexture);
+
+	glActiveTexture(GL_TEXTURE2);
+	glBindTexture(GL_TEXTURE_2D, normalTexture);
 }
 
 void SceneBasic_Uniform::compile()
