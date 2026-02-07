@@ -4,6 +4,9 @@ in vec3 Position;
 in vec3 Normal;
 in vec2 TexCoord;
 
+// Textures
+layout (binding = 0) uniform sampler2D floorTexture;
+
 
 layout (location = 0) out vec4 FragColor;
 uniform int NumLights;
@@ -23,16 +26,16 @@ uniform struct MaterialInfo {
 } Material;
 
 
-
 vec3 blinnPhong(LightInfo light, vec3 position, vec3 normal) {
     vec3 diffuse = vec3(0), specular = vec3(0);
-    vec3 ambient = light.La * Material.Ka;
 
+    vec3 texColor = texture(floorTexture, TexCoord).rgb;
+
+    vec3 ambient = light.La * texColor;
     vec3 s = normalize(light.Position.xyz - position);
 
-
     float sDotN = max(dot(s, normal), 0.0);
-    diffuse = light.Ld * Material.Kd * sDotN;
+    diffuse = light.Ld * texColor * sDotN;
     if (sDotN > 0.0) {
         vec3 v = normalize(-position);
         vec3 h = normalize(s + v);

@@ -22,6 +22,10 @@ private:
     void compile();
 	void setMatrices();
 
+    // Textures
+	GLuint floorTexture;
+	GLuint wallTexture;
+
 public:
     SceneBasic_Uniform();
 
