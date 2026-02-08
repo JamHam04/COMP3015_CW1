@@ -9,6 +9,7 @@ out vec3 Position;
 out vec3 Normal;
 out vec2 TexCoord;
 
+
 // Uniforms
 uniform mat4 ModelViewMatrix;
 uniform mat3 NormalMatrix;

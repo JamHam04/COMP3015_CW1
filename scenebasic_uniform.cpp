@@ -45,6 +45,11 @@ void SceneBasic_Uniform::initScene()
 	prog.setUniform("Lights[1].La", vec3(0.6f)); // Ambient light intensity
 	prog.setUniform("Lights[1].Ld", vec3(0.9f)); // Diffuse light intensity
 
+	// Fog properties
+	prog.setUniform("Fog.maxDist", 30.0f);
+	prog.setUniform("Fog.minDist", 1.0f);
+	prog.setUniform("Fog.Color", vec3(0.5f, 0.5f, 0.5f));
+
 	// Load Textures
 	// https://cc0-textures.com/
 	floorDiffuseTexture = Texture::loadTexture("media/texture/asphalt_01_diff_4k.jpg");
@@ -99,6 +104,7 @@ void SceneBasic_Uniform::render()
 
 
 	// FLOOR
+	
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, floorDiffuseTexture);
 
@@ -111,12 +117,12 @@ void SceneBasic_Uniform::render()
 	glActiveTexture(GL_TEXTURE3);
 	glBindTexture(GL_TEXTURE_2D, damageNormalTexture);
 	
-
+	prog.setUniform("useMixTexture", true);
 	prog.setUniform("Textures.diffuseTexture", 0);
 	prog.setUniform("Textures.normalTexture", 1);
 	prog.setUniform("Textures.mixDiffuseTexture", 2);
 	prog.setUniform("Textures.mixNormalTexture", 3);
-
+	
 
 	model = mat4(1.0f);
 	model = glm::scale(model, vec3(0.4f, 1.0f, 0.6f));
@@ -131,6 +137,7 @@ void SceneBasic_Uniform::render()
 	glActiveTexture(GL_TEXTURE1);
 	glBindTexture(GL_TEXTURE_2D, wallNormalTexture);
 
+	//prog.setUniform("useMixTexture", false);
 	prog.setUniform("Textures.diffuseTexture", 0); 
 	prog.setUniform("Textures.normalTexture", 1); 
 
