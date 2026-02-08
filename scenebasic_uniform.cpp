@@ -47,17 +47,16 @@ void SceneBasic_Uniform::initScene()
 
 	// Load Textures
 	// https://cc0-textures.com/
-	floorTexture = Texture::loadTexture("media/texture/asphalt_01_diff_4k.jpg");
-	wallTexture = Texture::loadTexture("media/texture/broken_wall_diff_4k.jpg");
+	floorDiffuseTexture = Texture::loadTexture("media/texture/asphalt_01_diff_4k.jpg");
+	wallDiffuseTexture = Texture::loadTexture("media/texture/broken_wall_diff_4k.jpg");
 
-	damageTexture = Texture::loadTexture("media/texture/Damage.png");
-	normalTexture = Texture::loadTexture("media/texture/asphalt_01_nor_gl_4k.jpg");
+	damageDiffuseTexture = Texture::loadTexture("media/texture/Damage.png");
+	damageNormalTexture = Texture::loadTexture("media/texture/Damage_Normal.png");
 
-	glActiveTexture(GL_TEXTURE1);
-	glBindTexture(GL_TEXTURE_2D, damageTexture);
+	floorNormalTexture = Texture::loadTexture("media/texture/asphalt_01_nor_gl_4k.jpg");
+	wallNormalTexture = Texture::loadTexture("media/texture/broken_wall_nor_gl_4k.jpg");
 
-	glActiveTexture(GL_TEXTURE2);
-	glBindTexture(GL_TEXTURE_2D, normalTexture);
+
 }
 
 void SceneBasic_Uniform::compile()
@@ -99,17 +98,44 @@ void SceneBasic_Uniform::render()
 	prog.setUniform("Material.Shininess", 100.0f);
 
 
+	// FLOOR
 	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, floorTexture);
+	glBindTexture(GL_TEXTURE_2D, floorDiffuseTexture);
+
+	glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_2D, floorNormalTexture);
+
+	glActiveTexture(GL_TEXTURE2);
+	glBindTexture(GL_TEXTURE_2D, damageDiffuseTexture);
+
+	glActiveTexture(GL_TEXTURE3);
+	glBindTexture(GL_TEXTURE_2D, damageNormalTexture);
+	
+
+	prog.setUniform("Textures.diffuseTexture", 0);
+	prog.setUniform("Textures.normalTexture", 1);
+	prog.setUniform("Textures.mixDiffuseTexture", 2);
+	prog.setUniform("Textures.mixNormalTexture", 3);
+
 
 	model = mat4(1.0f);
 	model = glm::scale(model, vec3(0.4f, 1.0f, 0.6f));
 	setMatrices();
 	plane.render();
 
-	
-	glBindTexture(GL_TEXTURE_2D, wallTexture); // Using floor binding for walls
+	// WALLS
 
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, wallDiffuseTexture);
+
+	glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_2D, wallNormalTexture);
+
+	prog.setUniform("Textures.diffuseTexture", 0); 
+	prog.setUniform("Textures.normalTexture", 1); 
+
+	
+	
 	// Back Wall
 	model = mat4(1.0f);
 	model = glm::translate(model, vec3(0.0f, 4.0f, -15.0f));

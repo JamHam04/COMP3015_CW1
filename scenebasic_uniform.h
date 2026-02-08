@@ -23,10 +23,12 @@ private:
 	void setMatrices();
 
     // Textures
-	GLuint floorTexture;
-	GLuint wallTexture;
-	GLuint damageTexture;
-	GLuint normalTexture;
+	GLuint floorDiffuseTexture;
+	GLuint wallDiffuseTexture;
+	GLuint damageDiffuseTexture;
+	GLuint damageNormalTexture;
+	GLuint floorNormalTexture;
+	GLuint wallNormalTexture;
 
 public:
     SceneBasic_Uniform();
