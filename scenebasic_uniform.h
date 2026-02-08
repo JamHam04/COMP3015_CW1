@@ -10,11 +10,14 @@
 #include <glm/glm.hpp>
 
 #include "helper/plane.h"
+#include "helper/objmesh.h"
 
 class SceneBasic_Uniform : public Scene
 {
 private:
     Plane plane;
+	std::unique_ptr<ObjMesh> barrel;
+
     GLuint vaoHandle;
     GLSLProgram prog;
     float angle;
@@ -29,6 +32,9 @@ private:
 	GLuint damageNormalTexture;
 	GLuint floorNormalTexture;
 	GLuint wallNormalTexture;
+
+	GLuint barrelDiffuseTexture;
+	GLuint barrelNormalTexture;
 
 public:
     SceneBasic_Uniform();

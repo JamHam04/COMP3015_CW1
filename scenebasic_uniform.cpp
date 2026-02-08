@@ -19,7 +19,11 @@ using glm::vec4;
 using glm::mat3;
 using glm::mat4;
 
-SceneBasic_Uniform::SceneBasic_Uniform() : plane(50.0f, 50.0f, 1, 1) {}
+SceneBasic_Uniform::SceneBasic_Uniform() : plane(50.0f, 50.0f, 1, 1) {
+	// Load models
+	// https://polyhaven.com/
+	barrel = ObjMesh::load("media/model/barrel_stove_4k.obj", true);
+}
 
 void SceneBasic_Uniform::initScene()
 {
@@ -61,6 +65,11 @@ void SceneBasic_Uniform::initScene()
 	floorNormalTexture = Texture::loadTexture("media/texture/asphalt_01_nor_gl_4k.jpg");
 	wallNormalTexture = Texture::loadTexture("media/texture/broken_wall_nor_gl_4k.jpg");
 
+	barrelDiffuseTexture = Texture::loadTexture("media/texture/barrel_stove_diff_4k.jpg");
+	barrelNormalTexture = Texture::loadTexture("media/texture/barrel_stove_nor_gl_4k.jpg");
+
+	
+	
 
 }
 
@@ -137,7 +146,7 @@ void SceneBasic_Uniform::render()
 	glActiveTexture(GL_TEXTURE1);
 	glBindTexture(GL_TEXTURE_2D, wallNormalTexture);
 
-	//prog.setUniform("useMixTexture", false);
+	prog.setUniform("useMixTexture", false);
 	prog.setUniform("Textures.diffuseTexture", 0); 
 	prog.setUniform("Textures.normalTexture", 1); 
 
@@ -180,7 +189,19 @@ void SceneBasic_Uniform::render()
 	setMatrices();
 	plane.render();
 
-
+	// BARREL
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, barrelDiffuseTexture);
+	glActiveTexture(GL_TEXTURE1);	
+	glBindTexture(GL_TEXTURE_2D, barrelNormalTexture);
+	prog.setUniform("Textures.diffuseTexture", 0);
+	prog.setUniform("Textures.normalTexture", 1);
+	model = mat4(1.0f);
+	model = glm::translate(model, vec3(0.0f, 2.0f, 4.0f));
+	model = glm::scale(model, vec3(3.0f));
+	
+	setMatrices();
+	barrel->render();
 
 }
 
