@@ -22,7 +22,7 @@ uniform struct LightInfo {
     vec3 La; // ambient
     vec3 Ld; // diffuse
     vec3 L; // intensity
-} Lights[2];
+} Lights[3];
 
 uniform struct MaterialInfo {
     vec3 Ka; // ambient

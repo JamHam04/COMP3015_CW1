@@ -39,7 +39,7 @@ void SceneBasic_Uniform::initScene()
 	projection = glm::perspective(glm::radians(70.0f), (float)width / height, 0.3f, 100.0f);
 
 	// Light properties
-	prog.setUniform("NumLights", 2); // Number of lights
+	prog.setUniform("NumLights", 3); // Number of lights
 
 	prog.setUniform("Lights[0].L", vec3(0.5f)); // Light intensity
 	prog.setUniform("Lights[0].La", vec3(0.6f)); // Ambient light intensity
@@ -48,6 +48,12 @@ void SceneBasic_Uniform::initScene()
 	prog.setUniform("Lights[1].L", vec3(0.6f)); // Light intensity
 	prog.setUniform("Lights[1].La", vec3(0.6f)); // Ambient light intensity
 	prog.setUniform("Lights[1].Ld", vec3(0.9f)); // Diffuse light intensity
+
+
+	// Fire light (inside barrel)
+	prog.setUniform("Lights[2].La", vec3(0.2f, 0.05f, 0.0f)); // Light intensity
+	prog.setUniform("Lights[2].Ld", vec3(1.0f, 0.4f, 0.1f)); // Ambient light intensity
+	prog.setUniform("Lights[2].L", vec3(1.0f)); // Diffuse light intensity
 
 	// Fog properties
 	prog.setUniform("Fog.maxDist", 30.0f);
@@ -86,11 +92,16 @@ void SceneBasic_Uniform::compile()
 	}
 }
 
-void SceneBasic_Uniform::update( float t )
+void SceneBasic_Uniform::update(float t)
 {
-	
-}
+	// Time
+	deltaTime = t - tPrev;
 
+	if (tPrev == 0.0f) {
+		deltaTime = 0.0f;
+	}
+	tPrev = t;
+}
 void SceneBasic_Uniform::render()
 {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -98,8 +109,18 @@ void SceneBasic_Uniform::render()
 	// Set light position
 	vec4 lightPos = vec4(-15.0f, 4.0f, -12.0f, 1.0f); 
 	vec4 lightPos2 = vec4(15.0f, 6.0f, 12.0f, 1.0f);
+	vec4 fireLightPos = vec4(0.0f, 2.5f, 4.0f, 1.0f); // Inside barrel
 	prog.setUniform("Lights[0].Position", view * lightPos);
 	prog.setUniform("Lights[1].Position", view * lightPos2);
+	prog.setUniform("Lights[2].Position", view * fireLightPos);
+
+	// Animte fire light inside barrel
+	float fireIntensity = 1.0f + 0.5f * sin(tPrev * 5.0f); // Flicker 
+	prog.setUniform("Lights[2].L", vec3(0.0f));
+	prog.setUniform("Lights[2].L", vec3(fireIntensity) * 0.25f); // Update fire light intensity
+
+	
+	
 
 	// Set material properties
 	vec3 diffuseColor = vec3(0.5f, 0.0f, 0.0f); 
@@ -190,10 +211,12 @@ void SceneBasic_Uniform::render()
 	plane.render();
 
 	// BARREL
+	prog.setUniform("Lights[2].L", vec3(fireIntensity)); // Update fire light intensity
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, barrelDiffuseTexture);
 	glActiveTexture(GL_TEXTURE1);	
 	glBindTexture(GL_TEXTURE_2D, barrelNormalTexture);
+
 	prog.setUniform("Textures.diffuseTexture", 0);
 	prog.setUniform("Textures.normalTexture", 1);
 	model = mat4(1.0f);

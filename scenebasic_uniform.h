@@ -21,6 +21,8 @@ private:
     GLuint vaoHandle;
     GLSLProgram prog;
     float angle;
+    float deltaTime;
+	float tPrev;
 
     void compile();
 	void setMatrices();
