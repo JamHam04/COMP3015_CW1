@@ -11,6 +11,7 @@
 
 #include "helper/plane.h"
 #include "helper/objmesh.h"
+#include <GLFW/glfw3.h>
 
 class SceneBasic_Uniform : public Scene
 {
@@ -26,6 +27,7 @@ private:
 
     void compile();
 	void setMatrices();
+	void userInput(GLFWwindow* WindowIn);   
 
     // Textures
 	GLuint floorDiffuseTexture;
@@ -42,9 +44,10 @@ public:
     SceneBasic_Uniform();
 
     void initScene();
-    void update( float t );
+    void update( float t , GLFWwindow* window);
     void render();
     void resize(int, int);
+    
 };
 
 #endif // SCENEBASIC_UNIFORM_H

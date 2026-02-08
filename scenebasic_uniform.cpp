@@ -19,6 +19,11 @@ using glm::vec4;
 using glm::mat3;
 using glm::mat4;
 
+vec3 cameraPos(0.0f, 4.0f, 6.0f);
+vec3 cameraTarget(0.0f, 0.0f, -1.0f);
+vec3 cameraUp(0.0f, 1.0f, 0.0f);
+float cameraSpeed = 5.0f;
+
 SceneBasic_Uniform::SceneBasic_Uniform() : plane(50.0f, 50.0f, 1, 1) {
 	// Load models
 	// https://polyhaven.com/
@@ -29,9 +34,9 @@ void SceneBasic_Uniform::initScene()
 {
 	glEnable(GL_DEPTH_TEST);
 	// Camera View
-	vec3 cameraPos(0.0f, 4.0f, 6.0f);
-	vec3 cameraTarget(0.0f, 0.2f, 0.0f);
-	vec3 cameraUp(0.0f, 1.0f, 0.0f);
+
+
+
 
     compile();
 	model = glm::mat4(1.0f);
@@ -92,7 +97,7 @@ void SceneBasic_Uniform::compile()
 	}
 }
 
-void SceneBasic_Uniform::update(float t)
+void SceneBasic_Uniform::update(float t, GLFWwindow* window)
 {
 	// Time
 	deltaTime = t - tPrev;
@@ -101,6 +106,9 @@ void SceneBasic_Uniform::update(float t)
 		deltaTime = 0.0f;
 	}
 	tPrev = t;
+
+	// Handle user input for camera movement
+	userInput(window);
 }
 void SceneBasic_Uniform::render()
 {
@@ -241,4 +249,28 @@ void SceneBasic_Uniform::setMatrices()
 	prog.setUniform("ModelViewMatrix", mv);
 	prog.setUniform("NormalMatrix", mat3(vec3(mv[0]), vec3(mv[1]), vec3(mv[2])));
 	prog.setUniform("MVP", projection * mv);
+}
+
+// Camera movement
+void SceneBasic_Uniform::userInput(GLFWwindow* WindowIn)
+{
+
+	
+	if (glfwGetKey(WindowIn, GLFW_KEY_W) == GLFW_PRESS) {
+		cameraPos += cameraSpeed * deltaTime * cameraTarget; // Move forward
+		
+	}
+	if (glfwGetKey(WindowIn, GLFW_KEY_S) == GLFW_PRESS) {
+		cameraPos -= cameraSpeed * deltaTime * cameraTarget; // Move backward
+		
+	}
+	if (glfwGetKey(WindowIn, GLFW_KEY_A) == GLFW_PRESS) {
+		cameraPos -= glm::normalize(glm::cross(cameraTarget, cameraUp)) * cameraSpeed * deltaTime; // Move left
+		
+	}
+	if (glfwGetKey(WindowIn, GLFW_KEY_D) == GLFW_PRESS) {
+		cameraPos += glm::normalize(glm::cross(cameraTarget, cameraUp)) * cameraSpeed * deltaTime; // Move right
+		
+	}
+	view = glm::lookAt(cameraPos, cameraPos + cameraTarget, cameraUp);
 }
