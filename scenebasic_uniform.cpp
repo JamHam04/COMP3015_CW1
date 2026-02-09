@@ -24,6 +24,14 @@ vec3 cameraTarget(0.0f, 0.0f, -1.0f);
 vec3 cameraUp(0.0f, 1.0f, 0.0f);
 float cameraSpeed = 5.0f;
 
+float cameraYaw = -90.0f;
+float cameraPitch = 0.0f;
+bool firstMoved = true;
+
+float cameraLastX;
+float cameraLastY;
+
+
 SceneBasic_Uniform::SceneBasic_Uniform() : plane(50.0f, 50.0f, 1, 1) {
 	// Load models
 	// https://polyhaven.com/
@@ -34,9 +42,8 @@ void SceneBasic_Uniform::initScene()
 {
 	glEnable(GL_DEPTH_TEST);
 	// Camera View
-
-
-
+	cameraLastX = width / 2.0f;
+	cameraLastY = height / 2.0f;
 
     compile();
 	model = glm::mat4(1.0f);
@@ -272,5 +279,45 @@ void SceneBasic_Uniform::userInput(GLFWwindow* WindowIn)
 		cameraPos += glm::normalize(glm::cross(cameraTarget, cameraUp)) * cameraSpeed * deltaTime; // Move right
 		
 	}
+	//view = glm::lookAt(cameraPos, cameraPos + cameraTarget, cameraUp);
+
+	// Handle mouse input for camera rotation
+	
+
+
+
+	float sensitivity = 0.1f;
+
+	double mouseX, mouseY;
+	glfwGetCursorPos(WindowIn, &mouseX, &mouseY);
+
+	if (firstMoved) {
+		cameraLastX = mouseX;
+		cameraLastY = mouseY;
+		firstMoved = false;
+	}
+
+	float xOffset = mouseX - cameraLastX;
+	float yOffset = cameraLastY - mouseY; 
+
+	cameraLastX = mouseX;
+	cameraLastY = mouseY;
+
+	cameraYaw += xOffset * sensitivity;
+	cameraPitch += yOffset * sensitivity;
+
+	// constrain pithc
+	if (cameraPitch > 89.0f)
+		cameraPitch = 89.0f;
+	if (cameraPitch < -89.0f)
+		cameraPitch = -89.0f;
+
+	// Update camera
+	vec3 front;
+	front.x = cos(glm::radians(cameraYaw)) * cos(glm::radians(cameraPitch));
+	front.y = sin(glm::radians(cameraPitch));
+	front.z = sin(glm::radians(cameraYaw)) * cos(glm::radians(cameraPitch));
+	cameraTarget = glm::normalize(front);
+
 	view = glm::lookAt(cameraPos, cameraPos + cameraTarget, cameraUp);
 }
