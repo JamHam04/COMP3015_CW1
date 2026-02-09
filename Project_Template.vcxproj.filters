@@ -57,12 +57,21 @@
     <ClCompile Include="helper\objmesh.cpp">
       <Filter>helper</Filter>
     </ClCompile>
+    <ClCompile Include="helper\skybox.cpp">
+      <Filter>helper</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="shader\basic_uniform.frag">
       <Filter>shaders</Filter>
     </None>
     <None Include="shader\basic_uniform.vert">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="shader\skybox.frag">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="shader\skybox.vert">
       <Filter>shaders</Filter>
     </None>
   </ItemGroup>
@@ -107,6 +116,9 @@
       <Filter>helper</Filter>
     </ClInclude>
     <ClInclude Include="helper\utils.h">
+      <Filter>helper</Filter>
+    </ClInclude>
+    <ClInclude Include="helper\skybox.h">
       <Filter>helper</Filter>
     </ClInclude>
   </ItemGroup>

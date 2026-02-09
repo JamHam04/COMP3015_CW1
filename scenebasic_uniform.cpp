@@ -32,7 +32,7 @@ float cameraLastX;
 float cameraLastY;
 
 
-SceneBasic_Uniform::SceneBasic_Uniform() : plane(50.0f, 50.0f, 1, 1) {
+SceneBasic_Uniform::SceneBasic_Uniform() : plane(50.0f, 50.0f, 1, 1), skybox(100.0f) {
 	// Load models
 	// https://polyhaven.com/
 	barrel = ObjMesh::load("media/model/barrel_stove_4k.obj", true);
@@ -47,7 +47,7 @@ void SceneBasic_Uniform::initScene()
 
     compile();
 	model = glm::mat4(1.0f);
-	view = glm::lookAt(cameraPos, cameraTarget, cameraUp);
+	//view = glm::lookAt(cameraPos, cameraTarget, cameraUp);
 	projection = glm::perspective(glm::radians(70.0f), (float)width / height, 0.3f, 100.0f);
 
 	// Light properties
@@ -86,8 +86,9 @@ void SceneBasic_Uniform::initScene()
 	barrelDiffuseTexture = Texture::loadTexture("media/texture/barrel_stove_diff_4k.jpg");
 	barrelNormalTexture = Texture::loadTexture("media/texture/barrel_stove_nor_gl_4k.jpg");
 
-	
-	
+
+	skyboxTexture = Texture::loadHdrCubeMap("media/texture/cube/night/n");
+
 
 }
 
@@ -98,6 +99,11 @@ void SceneBasic_Uniform::compile()
 		prog.compileShader("shader/basic_uniform.frag");
 		prog.link();
 		prog.use();
+
+		skyboxProg.compileShader("shader/skybox.vert");
+		skyboxProg.compileShader("shader/skybox.frag");
+		skyboxProg.link();
+
 	} catch (GLSLProgramException &e) {
 		cerr << e.what() << endl;
 		exit(EXIT_FAILURE);
@@ -121,6 +127,24 @@ void SceneBasic_Uniform::render()
 {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+
+	// SKYBOX
+
+
+	
+	skyboxProg.use();
+
+	mat4 skyboxView = mat4(mat3(view));
+	mat4 vp = projection * skyboxView;
+	skyboxProg.setUniform("MVP", vp);
+
+	skyboxProg.setUniform("SkyBoxTexture", 0);
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, skyboxTexture);
+
+	skybox.render();
+
+	prog.use();
 	// Set light position
 	vec4 lightPos = vec4(-15.0f, 4.0f, -12.0f, 1.0f); 
 	vec4 lightPos2 = vec4(15.0f, 6.0f, 12.0f, 1.0f);
@@ -146,6 +170,12 @@ void SceneBasic_Uniform::render()
 	prog.setUniform("Material.Ks", specularColor);
 	prog.setUniform("Material.Ka", ambientColor);
 	prog.setUniform("Material.Shininess", 100.0f);
+
+
+
+	
+
+	
 
 
 	// FLOOR
@@ -256,6 +286,7 @@ void SceneBasic_Uniform::setMatrices()
 	prog.setUniform("ModelViewMatrix", mv);
 	prog.setUniform("NormalMatrix", mat3(vec3(mv[0]), vec3(mv[1]), vec3(mv[2])));
 	prog.setUniform("MVP", projection * mv);
+	
 }
 
 // Camera movement

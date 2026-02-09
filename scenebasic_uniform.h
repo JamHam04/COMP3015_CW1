@@ -12,15 +12,18 @@
 #include "helper/plane.h"
 #include "helper/objmesh.h"
 #include <GLFW/glfw3.h>
+#include "helper/skybox.h"
 
 class SceneBasic_Uniform : public Scene
 {
 private:
     Plane plane;
 	std::unique_ptr<ObjMesh> barrel;
+	SkyBox skybox;
 
     GLuint vaoHandle;
     GLSLProgram prog;
+	GLSLProgram skyboxProg;
     float angle;
     float deltaTime;
 	float tPrev;
@@ -39,6 +42,8 @@ private:
 
 	GLuint barrelDiffuseTexture;
 	GLuint barrelNormalTexture;
+
+	GLuint skyboxTexture;
 
 public:
     SceneBasic_Uniform();
