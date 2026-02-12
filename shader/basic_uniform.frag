@@ -5,15 +5,32 @@ in vec3 Normal;
 in vec2 TexCoord;
 
 
-// Textures
-//layout (binding = 0) uniform sampler2D floorTexture;
-//layout (binding = 1) uniform sampler2D damageTexture;
-//layout (binding = 2) uniform sampler2D normalTexture;
+layout (binding = 0) uniform sampler2D HDRTex;
 
+uniform int Pass;
+uniform float AvgLum;
+uniform float Exposure = 0.35;
+uniform float White = 0.928;
+uniform bool DoToneMap;
 
 
 
 layout (location = 0) out vec4 FragColor;
+
+
+
+uniform mat3 rgb2xyz = mat3(
+    0.4124564, 0.2126729, 0.0193339,
+    0.3572769, 0.7151522, 0.1191920,
+    0.1804375, 0.0721750, 0.9503041
+);
+
+uniform mat3 xyz2rgb = mat3(
+    3.2404542, -0.9692660, 0.0556434,
+    -1.5371385, 1.8760108, -0.2040259,
+    -0.4985314, 0.0415560, 1.0572252
+);
+
 uniform int NumLights;
 uniform bool useMixTexture;
 
@@ -62,8 +79,8 @@ vec3 blinnPhong(LightInfo light, vec3 position, vec3 normal, vec3 texture) {
     return ambient + (diffuse + specular) * light.L;
 }
 
-void main()
-{
+// HDR
+void Pass1() {
     vec3 color = vec3(0);
 
     // Fog
@@ -99,6 +116,35 @@ void main()
     }
 
     color = mix(Fog.Color, color, fogFactor);
-    FragColor = vec4(color, 1.0); 
+    FragColor = vec4(color, 1.0);
+
+}
+
+// Tonemapping
+void Pass2() {
+    vec4 color = texture(HDRTex, TexCoord);
+
+    vec3 xyzCol = rgb2xyz * color.rgb;
+    float xyzSum = xyzCol.x + xyzCol.y + xyzCol.z;
+
+    vec3 xyYCol = vec3(xyzCol.x / xyzSum, xyzCol.y / xyzSum, xyzCol.y);
+
+    float L = (Exposure * xyYCol.z) / AvgLum;
+    L = (L * (1.0 + L / (White * White))) / (1.0 + L);
+
+
+    xyzCol.x = (L * xyYCol.x) / xyYCol.y;
+    xyzCol.y = L;
+    xyzCol.z = (L * (1.0 - xyYCol.x - xyYCol.y)) / xyYCol.y;
+
+    //FragColor = color;
+    FragColor = vec4(xyz2rgb * xyzCol, 1.0);
+}
+
+void main()
+{
+
+    if (Pass == 1) Pass1();
+    else if (Pass == 2) Pass2();
 
 }

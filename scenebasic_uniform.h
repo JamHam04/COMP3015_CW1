@@ -35,6 +35,7 @@ private:
 	void setupFBO();
 	void pass1(); void pass2();
 	void drawScene();
+	void computeLogAveLuminance();
 	void userInput(GLFWwindow* WindowIn);   
 
     // Textures

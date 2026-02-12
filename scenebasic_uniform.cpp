@@ -47,8 +47,42 @@ void SceneBasic_Uniform::initScene()
 
     compile();
 	model = glm::mat4(1.0f);
-	//view = glm::lookAt(cameraPos, cameraTarget, cameraUp);
+	view = glm::lookAt(cameraPos, cameraPos + cameraTarget, cameraUp);
+
 	projection = glm::perspective(glm::radians(70.0f), (float)width / height, 0.3f, 100.0f);
+
+	setupFBO();
+
+	// Setup quad 
+	GLfloat verts[] = {
+	-1.0f, -1.0f, 0.0f, 1.0f, -1.0f, 0.0f, 1.0f, 1.0f, 0.0f,
+	-1.0f, -1.0f, 0.0f, 1.0f, 1.0f, 0.0f, -1.0f, 1.0f, 0.0f
+	};
+	GLfloat tc[] = {
+		0.0f, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f,
+		0.0f, 0.0f, 1.0f, 1.0f, 0.0f, 1.0f
+	};
+
+	unsigned int handle[2];
+	glGenBuffers(2, handle);
+	glBindBuffer(GL_ARRAY_BUFFER, handle[0]);
+	glBufferData(GL_ARRAY_BUFFER, 6 * 3 * sizeof(GLfloat), verts, GL_STATIC_DRAW);
+
+	glBindBuffer(GL_ARRAY_BUFFER, handle[1]);
+	glBufferData(GL_ARRAY_BUFFER, 6 * 2 * sizeof(GLfloat), tc, GL_STATIC_DRAW);
+
+	glGenVertexArrays(1, &quad);
+	glBindVertexArray(quad);
+
+	glBindBuffer(GL_ARRAY_BUFFER, handle[0]);
+	glVertexAttribPointer((GLuint)0, 3, GL_FLOAT, GL_FALSE, 0, 0);
+	glEnableVertexAttribArray(0);
+
+	glBindBuffer(GL_ARRAY_BUFFER, handle[1]);
+	glVertexAttribPointer((GLuint)2, 2, GL_FLOAT, GL_FALSE, 0, 0);
+	glEnableVertexAttribArray(2);
+
+	glBindVertexArray(0);
 
 	// Light properties
 	prog.setUniform("NumLights", 3); // Number of lights
@@ -89,6 +123,7 @@ void SceneBasic_Uniform::initScene()
 
 	skyboxTexture = Texture::loadHdrCubeMap("media/texture/cube/night/n");
 
+	
 
 }
 
@@ -126,24 +161,30 @@ void SceneBasic_Uniform::update(float t, GLFWwindow* window)
 void SceneBasic_Uniform::render()
 {
 	pass1();
-
+	computeLogAveLuminance();
+	pass2();
 }
 
 // HDR
 void SceneBasic_Uniform::pass1()
 {
+	prog.setUniform("Pass", 1);
 	glClearColor(0.5f, 0.5f, 0.5f, 1.0f); 
 	glViewport(0, 0, width, height); 
 	glBindFramebuffer(GL_FRAMEBUFFER, hdrFBO);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glEnable(GL_DEPTH_TEST);
+	projection = glm::perspective(glm::radians(60.0f), (float)width / height, 0.3f, 100.0f);
 
 	drawScene();
+
+
+
 
 }
 
 void SceneBasic_Uniform::drawScene() {
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	
 
 	// SKYBOX
 	skyboxProg.use();
@@ -269,6 +310,28 @@ void SceneBasic_Uniform::drawScene() {
 
 }
 
+// Tone mapping
+void SceneBasic_Uniform::pass2() {
+	prog.setUniform("Pass", 2);
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	glDisable(GL_DEPTH_TEST);
+
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, hdrTexture);
+	prog.setUniform("HDRTex", 0);
+
+	model = mat4(1.0f);
+	view = mat4(1.0f);
+	projection = mat4(1.0f);
+	setMatrices();
+
+
+	glBindVertexArray(quad);
+	glDrawArrays(GL_TRIANGLES, 0, 6);
+}
+
 void SceneBasic_Uniform::resize(int w, int h)
 {
     width = w;
@@ -309,10 +372,6 @@ void SceneBasic_Uniform::userInput(GLFWwindow* WindowIn)
 	//view = glm::lookAt(cameraPos, cameraPos + cameraTarget, cameraUp);
 
 	// Handle mouse input for camera rotation
-	
-
-
-
 	float sensitivity = 0.1f;
 
 	double mouseX, mouseY;
@@ -349,6 +408,7 @@ void SceneBasic_Uniform::userInput(GLFWwindow* WindowIn)
 	view = glm::lookAt(cameraPos, cameraPos + cameraTarget, cameraUp);
 }
 
+// Setup framebuffer for HDR
 void SceneBasic_Uniform::setupFBO()
 {
 	GLuint depthBuf;
@@ -372,8 +432,24 @@ void SceneBasic_Uniform::setupFBO()
 
 	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depthBuf);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, hdrTexture, 0);
-	GLenum drawBuffers[] = { GL_NONE, GL_COLOR_ATTACHMENT0 };
+	GLenum drawBuffers[] = { GL_COLOR_ATTACHMENT0 };
+	glDrawBuffers(1, drawBuffers);
 
-	glDrawBuffers(2, drawBuffers);
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+}
+
+void SceneBasic_Uniform::computeLogAveLuminance()
+{
+	int size = width * height;
+	std::vector<GLfloat>texData(size * 3);
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, hdrTexture);
+	glGetTexImage(GL_TEXTURE_2D, 0, GL_RGB, GL_FLOAT, texData.data());
+	float sum = 0.0f;
+	for (int i = 0; i < size; ++i) {
+		float lum = glm::dot(vec3(texData[i * 3], texData[i * 3 + 1], texData[i * 3 + 2]), vec3(0.2126f, 0.7152f, 0.0722f));
+		sum += logf(0.00001f + lum);
+	}
+	prog.setUniform("AvgLum", expf(sum / size));
 }
