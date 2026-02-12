@@ -125,13 +125,27 @@ void SceneBasic_Uniform::update(float t, GLFWwindow* window)
 }
 void SceneBasic_Uniform::render()
 {
+	pass1();
+
+}
+
+// HDR
+void SceneBasic_Uniform::pass1()
+{
+	glClearColor(0.5f, 0.5f, 0.5f, 1.0f); 
+	glViewport(0, 0, width, height); 
+	glBindFramebuffer(GL_FRAMEBUFFER, hdrFBO);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	glEnable(GL_DEPTH_TEST);
+
+	drawScene();
+
+}
+
+void SceneBasic_Uniform::drawScene() {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-
 	// SKYBOX
-
-
-	
 	skyboxProg.use();
 
 	mat4 skyboxView = mat4(mat3(view));
@@ -146,7 +160,7 @@ void SceneBasic_Uniform::render()
 
 	prog.use();
 	// Set light position
-	vec4 lightPos = vec4(-15.0f, 4.0f, -12.0f, 1.0f); 
+	vec4 lightPos = vec4(-15.0f, 4.0f, -12.0f, 1.0f);
 	vec4 lightPos2 = vec4(15.0f, 6.0f, 12.0f, 1.0f);
 	vec4 fireLightPos = vec4(0.0f, 2.5f, 4.0f, 1.0f); // Inside barrel
 	prog.setUniform("Lights[0].Position", view * lightPos);
@@ -158,28 +172,17 @@ void SceneBasic_Uniform::render()
 	prog.setUniform("Lights[2].L", vec3(0.0f));
 	prog.setUniform("Lights[2].L", vec3(fireIntensity) * 0.25f); // Update fire light intensity
 
-	
-	
-
 	// Set material properties
-	vec3 diffuseColor = vec3(0.5f, 0.0f, 0.0f); 
+	vec3 diffuseColor = vec3(0.5f, 0.0f, 0.0f);
 	vec3 specularColor = vec3(1.0f, 1.0f, 1.0f);
-	vec3 ambientColor = vec3(0.2f, 0.0f, 0.0f); 
+	vec3 ambientColor = vec3(0.2f, 0.0f, 0.0f);
 
 	prog.setUniform("Material.Kd", diffuseColor);
 	prog.setUniform("Material.Ks", specularColor);
 	prog.setUniform("Material.Ka", ambientColor);
 	prog.setUniform("Material.Shininess", 100.0f);
 
-
-
-	
-
-	
-
-
 	// FLOOR
-	
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, floorDiffuseTexture);
 
@@ -191,13 +194,12 @@ void SceneBasic_Uniform::render()
 
 	glActiveTexture(GL_TEXTURE3);
 	glBindTexture(GL_TEXTURE_2D, damageNormalTexture);
-	
+
 	prog.setUniform("useMixTexture", true);
 	prog.setUniform("Textures.diffuseTexture", 0);
 	prog.setUniform("Textures.normalTexture", 1);
 	prog.setUniform("Textures.mixDiffuseTexture", 2);
 	prog.setUniform("Textures.mixNormalTexture", 3);
-	
 
 	model = mat4(1.0f);
 	model = glm::scale(model, vec3(0.4f, 1.0f, 0.6f));
@@ -205,7 +207,6 @@ void SceneBasic_Uniform::render()
 	plane.render();
 
 	// WALLS
-
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, wallDiffuseTexture);
 
@@ -213,11 +214,9 @@ void SceneBasic_Uniform::render()
 	glBindTexture(GL_TEXTURE_2D, wallNormalTexture);
 
 	prog.setUniform("useMixTexture", false);
-	prog.setUniform("Textures.diffuseTexture", 0); 
-	prog.setUniform("Textures.normalTexture", 1); 
+	prog.setUniform("Textures.diffuseTexture", 0);
+	prog.setUniform("Textures.normalTexture", 1);
 
-	
-	
 	// Back Wall
 	model = mat4(1.0f);
 	model = glm::translate(model, vec3(0.0f, 4.0f, -15.0f));
@@ -226,7 +225,6 @@ void SceneBasic_Uniform::render()
 	setMatrices();
 	plane.render();
 
-
 	// Front Wall
 	model = mat4(1.0f);
 	model = glm::translate(model, vec3(0.0f, 4.0f, 15.0f));
@@ -234,7 +232,6 @@ void SceneBasic_Uniform::render()
 	model = glm::scale(model, vec3(0.4f, 1.0f, 0.16f));
 	setMatrices();
 	plane.render();
-
 
 	// Left Wall
 	model = mat4(1.0f);
@@ -245,12 +242,11 @@ void SceneBasic_Uniform::render()
 	setMatrices();
 	plane.render();
 
-
 	// Right wall
 	model = mat4(1.0f);
 	model = glm::translate(model, vec3(10.0f, 4.0f, 0.0f));
 	model = glm::rotate(model, glm::radians(-90.0f), vec3(0, 0, 1));
-	model = glm::rotate(model, glm::radians(-90.0f), vec3(0, 1, 0)); 
+	model = glm::rotate(model, glm::radians(-90.0f), vec3(0, 1, 0));
 	model = glm::scale(model, vec3(0.6f, 1.0f, 0.16f));
 	setMatrices();
 	plane.render();
@@ -259,7 +255,7 @@ void SceneBasic_Uniform::render()
 	prog.setUniform("Lights[2].L", vec3(fireIntensity)); // Update fire light intensity
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, barrelDiffuseTexture);
-	glActiveTexture(GL_TEXTURE1);	
+	glActiveTexture(GL_TEXTURE1);
 	glBindTexture(GL_TEXTURE_2D, barrelNormalTexture);
 
 	prog.setUniform("Textures.diffuseTexture", 0);
@@ -267,7 +263,7 @@ void SceneBasic_Uniform::render()
 	model = mat4(1.0f);
 	model = glm::translate(model, vec3(0.0f, 2.0f, 4.0f));
 	model = glm::scale(model, vec3(3.0f));
-	
+
 	setMatrices();
 	barrel->render();
 
@@ -351,4 +347,33 @@ void SceneBasic_Uniform::userInput(GLFWwindow* WindowIn)
 	cameraTarget = glm::normalize(front);
 
 	view = glm::lookAt(cameraPos, cameraPos + cameraTarget, cameraUp);
+}
+
+void SceneBasic_Uniform::setupFBO()
+{
+	GLuint depthBuf;
+
+	glGenFramebuffers(1, &hdrFBO);
+	glBindFramebuffer(GL_FRAMEBUFFER, hdrFBO);
+
+	glGenRenderbuffers(1, &depthBuf);
+	glBindRenderbuffer(GL_RENDERBUFFER, depthBuf);
+
+	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, width, height);
+
+	glActiveTexture(GL_TEXTURE0);
+	glGenTextures(1, &hdrTexture);
+	glBindTexture(GL_TEXTURE_2D, hdrTexture);
+
+	glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGBA32F, width, height);
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depthBuf);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, hdrTexture, 0);
+	GLenum drawBuffers[] = { GL_NONE, GL_COLOR_ATTACHMENT0 };
+
+	glDrawBuffers(2, drawBuffers);
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }

@@ -22,14 +22,19 @@ private:
 	SkyBox skybox;
 
     GLuint vaoHandle;
+	GLuint hdrFBO, hdrTexture, quad;
+
     GLSLProgram prog;
 	GLSLProgram skyboxProg;
     float angle;
     float deltaTime;
 	float tPrev;
+	void setMatrices();
 
     void compile();
-	void setMatrices();
+	void setupFBO();
+	void pass1(); void pass2();
+	void drawScene();
 	void userInput(GLFWwindow* WindowIn);   
 
     // Textures
