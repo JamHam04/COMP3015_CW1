@@ -6,12 +6,20 @@ in vec2 TexCoord;
 
 
 layout (binding = 0) uniform sampler2D HDRTex;
+layout (binding = 1) uniform sampler2D BlurTex1;
+layout (binding = 2) uniform sampler2D BlurTex2;
 
+// HDR
 uniform int Pass;
 uniform float AvgLum;
 uniform float Exposure = 0.35;
 uniform float White = 0.928;
-uniform bool DoToneMap;
+
+// Bloom
+uniform float LumThresh;
+uniform float PixOffset[10] = float[](0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0);
+uniform float Weight[10];
+
 
 
 
@@ -30,6 +38,10 @@ uniform mat3 xyz2rgb = mat3(
     -1.5371385, 1.8760108, -0.2040259,
     -0.4985314, 0.0415560, 1.0572252
 );
+
+float luminance(vec3 color) {
+    return 0.2126 * color.r + 0.7152 * color.g + 0.0722 * color.b;
+}
 
 uniform int NumLights;
 uniform bool useMixTexture;
@@ -80,7 +92,7 @@ vec3 blinnPhong(LightInfo light, vec3 position, vec3 normal, vec3 texture) {
 }
 
 // HDR
-void Pass1() {
+vec4 Pass1() {
     vec3 color = vec3(0);
 
     // Fog
@@ -116,12 +128,45 @@ void Pass1() {
     }
 
     color = mix(Fog.Color, color, fogFactor);
-    FragColor = vec4(color, 1.0);
+    return vec4(color, 1.0);
 
 }
 
+vec4 Pass2() {
+    vec4 val = texture(HDRTex, TexCoord);
+
+    if (luminance(val.rgb) > LumThresh)
+        return val;
+    else
+        return vec4(0.0);
+
+}
+vec4 Pass3() {
+    float dx = 1.0 / (textureSize(BlurTex1, 0)).y;
+    vec4 sum = texture(BlurTex1, TexCoord) * Weight[0];
+    for (int i = 1; i < 10; i++) {
+        sum += texture(BlurTex1, TexCoord + vec2(0.0, PixOffset[i]) * dx) * Weight[i];
+        sum += texture(BlurTex1, TexCoord - vec2(0.0, PixOffset[i]) * dx) * Weight[i];
+    }
+    return sum;
+
+}
+
+vec4 Pass4() {
+    float dy = 1.0 / (textureSize(BlurTex2, 0)).x;
+    vec4 sum = texture(BlurTex2, TexCoord) * Weight[0];
+    for (int i = 1; i < 10; i++) {
+        sum += texture(BlurTex2, TexCoord + vec2(PixOffset[i], 0.0) * dy) * Weight[i];
+        sum += texture(BlurTex2, TexCoord - vec2(PixOffset[i], 0.0) * dy) * Weight[i];
+    }
+    return sum;
+
+}
+
+
+
 // Tonemapping
-void Pass2() {
+vec4 Pass5() {
     vec4 color = texture(HDRTex, TexCoord);
 
     vec3 xyzCol = rgb2xyz * color.rgb;
@@ -137,14 +182,24 @@ void Pass2() {
     xyzCol.y = L;
     xyzCol.z = (L * (1.0 - xyYCol.x - xyYCol.y)) / xyYCol.y;
 
+    // Convert back to RGB
+    vec4 toneMappedColor = vec4(xyz2rgb * xyzCol, 1.0);
+    vec4 blurTex = texture(BlurTex1, TexCoord);
+
     //FragColor = color;
-    FragColor = vec4(xyz2rgb * xyzCol, 1.0);
+    return  toneMappedColor + blurTex;
 }
+
+
 
 void main()
 {
 
-    if (Pass == 1) Pass1();
-    else if (Pass == 2) Pass2();
+    if(Pass == 1) FragColor = Pass1();
+    else if(Pass == 2) FragColor = Pass2();
+    else if(Pass == 3) FragColor = Pass3();
+    else if(Pass == 4) FragColor = Pass4();
+    else if(Pass == 5) FragColor = Pass5();
+
 
 }

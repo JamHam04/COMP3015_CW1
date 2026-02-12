@@ -23,6 +23,9 @@ private:
 
     GLuint vaoHandle;
 	GLuint hdrFBO, hdrTexture, quad;
+	GLuint blurFBO, tex1, tex2; 
+	GLuint linearSampler, nearestSampler;
+	int bloomBufferWidth, bloomBufferHeight;
 
     GLSLProgram prog;
 	GLSLProgram skyboxProg;
@@ -33,10 +36,12 @@ private:
 
     void compile();
 	void setupFBO();
-	void pass1(); void pass2();
+	void pass1(); void pass2(); void pass3(); void pass4(); void pass5();
+	float gauss(float, float);
 	void drawScene();
 	void computeLogAveLuminance();
-	void userInput(GLFWwindow* WindowIn);   
+	void userInput(GLFWwindow* WindowIn);  
+
 
     // Textures
 	GLuint floorDiffuseTexture;

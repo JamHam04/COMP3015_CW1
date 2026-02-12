@@ -83,6 +83,44 @@ void SceneBasic_Uniform::initScene()
 	glEnableVertexAttribArray(2);
 
 	glBindVertexArray(0);
+	prog.setUniform("LumThresh", 1.7f);
+	// Bloom
+	float weights[10], sum, sigma2 = 25.0f;
+	weights[0] = gauss(0, sigma2);
+	sum = weights[0];
+	for (int i = 1; i < 10; i++) {
+		weights[i] = gauss(float(i), sigma2);
+		sum += 2 * weights[i];
+	}
+	// Normalize the weights and set the uniform
+	for (int i = 0; i < 10; i++) {
+		std::stringstream uniName;
+		uniName << "Weight[" << i << "]";
+		float val = weights[i] / sum;
+		prog.setUniform(uniName.str().c_str(), val);
+	}
+	// Set up two sampler objects for linear and nearest filtering
+	GLuint samplers[2];
+	glGenSamplers(2, samplers);
+	linearSampler = samplers[0];
+	nearestSampler = samplers[1];
+	GLfloat border[] = { 0.0f,0.0f,0.0f,0.0f };
+	// Set up the nearest sampler
+	glSamplerParameteri(nearestSampler, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glSamplerParameteri(nearestSampler, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glSamplerParameteri(nearestSampler, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+	glSamplerParameteri(nearestSampler, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+	glSamplerParameterfv(nearestSampler, GL_TEXTURE_BORDER_COLOR, border);
+	// Set up the linear sampler
+	glSamplerParameteri(linearSampler, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glSamplerParameteri(linearSampler, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glSamplerParameteri(linearSampler, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+	glSamplerParameteri(linearSampler, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+	glSamplerParameterfv(linearSampler, GL_TEXTURE_BORDER_COLOR, border);
+	// We want nearest sampling except for the last pass.
+	glBindSampler(0, nearestSampler);
+	glBindSampler(1, nearestSampler);
+	glBindSampler(2, nearestSampler);
 
 	// Light properties
 	prog.setUniform("NumLights", 3); // Number of lights
@@ -163,6 +201,9 @@ void SceneBasic_Uniform::render()
 	pass1();
 	computeLogAveLuminance();
 	pass2();
+	pass3();
+	pass4();
+	pass5();
 }
 
 // HDR
@@ -177,10 +218,58 @@ void SceneBasic_Uniform::pass1()
 	projection = glm::perspective(glm::radians(60.0f), (float)width / height, 0.3f, 100.0f);
 
 	drawScene();
+}
 
+// Bloom
+void SceneBasic_Uniform::pass2()
+{
+	prog.setUniform("Pass", 2);
+	glBindFramebuffer(GL_FRAMEBUFFER, blurFBO);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex1, 0);
+	glViewport(0, 0, bloomBufferWidth, bloomBufferHeight);
 
+	glDisable(GL_DEPTH_TEST);
+	glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+	glClear(GL_COLOR_BUFFER_BIT);
 
+	model = mat4(1.0f);
+	view = mat4(1.0f);
+	projection = mat4(1.0f);
 
+	setMatrices();
+
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, hdrTexture);
+
+	glBindVertexArray(quad);
+	glDrawArrays(GL_TRIANGLES, 0, 6);
+	//glBindVertexArray(0);
+}
+
+// Blur (vertical)
+void SceneBasic_Uniform::pass3()
+{
+	prog.setUniform("Pass", 3);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex2, 0);
+
+	glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_2D, tex1);
+
+	glBindVertexArray(quad); 
+	glDrawArrays(GL_TRIANGLES, 0, 6);
+}
+
+// Blur (horizontal)
+void SceneBasic_Uniform::pass4()
+{
+	prog.setUniform("Pass", 4);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex1, 0);
+
+	glActiveTexture(GL_TEXTURE2);
+	glBindTexture(GL_TEXTURE_2D, tex2);
+
+	glBindVertexArray(quad); 
+	glDrawArrays(GL_TRIANGLES, 0, 6);
 }
 
 void SceneBasic_Uniform::drawScene() {
@@ -201,8 +290,11 @@ void SceneBasic_Uniform::drawScene() {
 
 	prog.use();
 	// Set light position
+
+
+
 	vec4 lightPos = vec4(-15.0f, 4.0f, -12.0f, 1.0f);
-	vec4 lightPos2 = vec4(15.0f, 6.0f, 12.0f, 1.0f);
+	vec4 lightPos2 = vec4(8.0f, 3.0f, 0.0f, 1.0f);
 	vec4 fireLightPos = vec4(0.0f, 2.5f, 4.0f, 1.0f); // Inside barrel
 	prog.setUniform("Lights[0].Position", view * lightPos);
 	prog.setUniform("Lights[1].Position", view * lightPos2);
@@ -310,27 +402,31 @@ void SceneBasic_Uniform::drawScene() {
 
 }
 
-// Tone mapping
-void SceneBasic_Uniform::pass2() {
-	prog.setUniform("Pass", 2);
+// Combine HDR and bloom + tone mapping
+void SceneBasic_Uniform::pass5()
+{
+	prog.setUniform("Pass", 5);
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	glDisable(GL_DEPTH_TEST);
+	glClear(GL_COLOR_BUFFER_BIT);
+	glViewport(0, 0, width, height);
 
+	// Bind HDR texture to unit 0
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, hdrTexture);
-	prog.setUniform("HDRTex", 0);
 
-	model = mat4(1.0f);
-	view = mat4(1.0f);
-	projection = mat4(1.0f);
-	setMatrices();
+	// Bind blurred bloom texture to unit 2
+	glActiveTexture(GL_TEXTURE2);
+	glBindTexture(GL_TEXTURE_2D, tex1);   // final blurred result
 
+	glBindSampler(1, linearSampler);
 
 	glBindVertexArray(quad);
 	glDrawArrays(GL_TRIANGLES, 0, 6);
+
+	glBindSampler(1, nearestSampler);
 }
+
 
 void SceneBasic_Uniform::resize(int w, int h)
 {
@@ -351,8 +447,6 @@ void SceneBasic_Uniform::setMatrices()
 // Camera movement
 void SceneBasic_Uniform::userInput(GLFWwindow* WindowIn)
 {
-
-	
 	if (glfwGetKey(WindowIn, GLFW_KEY_W) == GLFW_PRESS) {
 		cameraPos += cameraSpeed * deltaTime * cameraTarget; // Move forward
 		
@@ -411,31 +505,52 @@ void SceneBasic_Uniform::userInput(GLFWwindow* WindowIn)
 // Setup framebuffer for HDR
 void SceneBasic_Uniform::setupFBO()
 {
-	GLuint depthBuf;
-
+	
+	// Frame buffer
 	glGenFramebuffers(1, &hdrFBO);
 	glBindFramebuffer(GL_FRAMEBUFFER, hdrFBO);
-
-	glGenRenderbuffers(1, &depthBuf);
-	glBindRenderbuffer(GL_RENDERBUFFER, depthBuf);
-
-	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, width, height);
-
+#
 	glActiveTexture(GL_TEXTURE0);
 	glGenTextures(1, &hdrTexture);
 	glBindTexture(GL_TEXTURE_2D, hdrTexture);
 
-	glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGBA32F, width, height);
-
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-
-	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depthBuf);
+	glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGB32F, width, height);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, hdrTexture, 0);
+
+	// Depth buffer
+	GLuint depthBuf;
+	glGenRenderbuffers(1, &depthBuf);
+	glBindRenderbuffer(GL_RENDERBUFFER, depthBuf);
+
+	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, width, height);
+	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depthBuf);
+
 	GLenum drawBuffers[] = { GL_COLOR_ATTACHMENT0 };
 	glDrawBuffers(1, drawBuffers);
 
+	// Bloom buffer
+	glGenFramebuffers(1, &blurFBO);
+	glBindFramebuffer(GL_FRAMEBUFFER, blurFBO);
+
+	bloomBufferWidth = width / 8;
+	bloomBufferHeight = height / 8;
+
+	glGenTextures(1, &tex1);
+	glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_2D, tex1);
+	glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGB32F, bloomBufferWidth, bloomBufferHeight);
+	glActiveTexture(GL_TEXTURE2);
+	glGenTextures(1, &tex2);
+	glBindTexture(GL_TEXTURE_2D, tex2);
+	glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGB32F, bloomBufferWidth, bloomBufferHeight);
+	// Bind tex1 to the FBO
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex1, 0);
+	glDrawBuffers(1, drawBuffers);
+
+
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+	// 
 
 }
 
@@ -452,4 +567,11 @@ void SceneBasic_Uniform::computeLogAveLuminance()
 		sum += logf(0.00001f + lum);
 	}
 	prog.setUniform("AvgLum", expf(sum / size));
+}
+
+float SceneBasic_Uniform::gauss(float x, float sigma2)
+{
+	double coeff = 1.0 / sqrt(2.0 * glm::pi<double>() * sigma2);
+	double exponent = -(x * x) / (2.0 * sigma2);
+	return (float)(coeff * exp(exponent));
 }
