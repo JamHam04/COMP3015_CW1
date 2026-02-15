@@ -22,7 +22,7 @@ x64/Debug/
 x64/debug/
 Release/
 *.o
-*.obj
+
 *.exe
 *.dll
 *.ilk
