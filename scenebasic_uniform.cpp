@@ -34,8 +34,9 @@ float cameraLastY;
 
 SceneBasic_Uniform::SceneBasic_Uniform() : plane(50.0f, 50.0f, 1, 1), skybox(100.0f) {
 	// Load models
-	// https://polyhaven.com/
 	barrel = ObjMesh::load("media/model/barrel_stove_4k.obj", true);
+	roof = ObjMesh::load("media/model/Broken_Wall.obj", true);
+	barrier = ObjMesh::load("media/model/concrete_road_barrier_02_4k.obj", true); 
 }
 
 void SceneBasic_Uniform::initScene()
@@ -63,6 +64,7 @@ void SceneBasic_Uniform::initScene()
 		0.0f, 0.0f, 1.0f, 1.0f, 0.0f, 1.0f
 	};
 
+	// Create quad buffers
 	unsigned int handle[2];
 	glGenBuffers(2, handle);
 	glBindBuffer(GL_ARRAY_BUFFER, handle[0]);
@@ -83,7 +85,9 @@ void SceneBasic_Uniform::initScene()
 	glEnableVertexAttribArray(2);
 
 	glBindVertexArray(0);
+
 	prog.setUniform("LumThresh", 1.7f);
+
 	// Bloom
 	float weights[10], sum, sigma2 = 25.0f;
 	weights[0] = gauss(0, sigma2);
@@ -125,43 +129,43 @@ void SceneBasic_Uniform::initScene()
 	// Light properties
 	prog.setUniform("NumLights", 3); // Number of lights
 
-	prog.setUniform("Lights[0].L", vec3(0.5f)); // Light intensity
-	prog.setUniform("Lights[0].La", vec3(0.6f)); // Ambient light intensity
-	prog.setUniform("Lights[0].Ld", vec3(0.9f)); // Diffuse light intensity
+	prog.setUniform("Lights[0].L", vec3(0.35f, 0.38f, 0.45f)); // Light intensity
+	prog.setUniform("Lights[0].La", vec3(0.05f)); // Ambient light intensity
+	prog.setUniform("Lights[0].Ld", vec3(0.5f)); // Diffuse light intensity
 
-	prog.setUniform("Lights[1].L", vec3(0.6f)); // Light intensity
-	prog.setUniform("Lights[1].La", vec3(0.6f)); // Ambient light intensity
-	prog.setUniform("Lights[1].Ld", vec3(0.9f)); // Diffuse light intensity
+	prog.setUniform("Lights[1].L", vec3(0.12f, 0.12f, 0.13f)); // Light intensity
+	prog.setUniform("Lights[1].La", vec3(0.03f)); // Ambient light intensity
+	prog.setUniform("Lights[1].Ld", vec3(0.25f)); // Diffuse light intensity
 
 
 	// Fire light (inside barrel)
-	prog.setUniform("Lights[2].La", vec3(0.2f, 0.05f, 0.0f)); // Light intensity
-	prog.setUniform("Lights[2].Ld", vec3(1.0f, 0.4f, 0.1f)); // Ambient light intensity
-	prog.setUniform("Lights[2].L", vec3(1.0f)); // Diffuse light intensity
+	prog.setUniform("Lights[2].L", vec3(1.0f, 0.4f, 0.2f)); // Light intensity
+	prog.setUniform("Lights[2].La", vec3(0.2f, 0.05f, 0.0f)); // Ambient light intensity
+	prog.setUniform("Lights[2].Ld", vec3(1.0f, 0.4f, 0.1f)); // Diffuse light intensity
+	
 
 	// Fog properties
-	prog.setUniform("Fog.maxDist", 30.0f);
+	prog.setUniform("Fog.maxDist", 20.0f);
 	prog.setUniform("Fog.minDist", 1.0f);
-	prog.setUniform("Fog.Color", vec3(0.5f, 0.5f, 0.5f));
+	prog.setUniform("Fog.Color", vec3(0.03f, 0.05f, 0.08f));
 
 	// Load Textures
-	// https://cc0-textures.com/
 	floorDiffuseTexture = Texture::loadTexture("media/texture/asphalt_01_diff_4k.jpg");
-	wallDiffuseTexture = Texture::loadTexture("media/texture/broken_wall_diff_4k.jpg");
+	wallDiffuseTexture = Texture::loadTexture("media/texture/rough_plaster_03_diff_4k.jpg");
 
 	damageDiffuseTexture = Texture::loadTexture("media/texture/Damage.png");
 	damageNormalTexture = Texture::loadTexture("media/texture/Damage_Normal.png");
 
 	floorNormalTexture = Texture::loadTexture("media/texture/asphalt_01_nor_gl_4k.jpg");
-	wallNormalTexture = Texture::loadTexture("media/texture/broken_wall_nor_gl_4k.jpg");
+	wallNormalTexture = Texture::loadTexture("media/texture/rough_plaster_03_nor_gl_4k.jpg");
 
 	barrelDiffuseTexture = Texture::loadTexture("media/texture/barrel_stove_diff_4k.jpg");
 	barrelNormalTexture = Texture::loadTexture("media/texture/barrel_stove_nor_gl_4k.jpg");
 
+	barrierDiffuseTexture = Texture::loadTexture("media/texture/concrete_road_barrier_02_diff_4k.jpg");
+	barrierNormalTexture = Texture::loadTexture("media/texture/concrete_road_barrier_02_nor_gl_4k.jpg");
 
 	skyboxTexture = Texture::loadHdrCubeMap("media/texture/cube/night/n");
-
-	
 
 }
 
@@ -195,6 +199,14 @@ void SceneBasic_Uniform::update(float t, GLFWwindow* window)
 
 	// Handle user input for camera movement
 	userInput(window);
+
+	// Lock mouse movement
+	static bool cursorDisabled = false; 
+	if (!cursorDisabled) {
+		glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+		cursorDisabled = true;
+	}
+
 }
 void SceneBasic_Uniform::render()
 {
@@ -243,7 +255,6 @@ void SceneBasic_Uniform::pass2()
 
 	glBindVertexArray(quad);
 	glDrawArrays(GL_TRIANGLES, 0, 6);
-	//glBindVertexArray(0);
 }
 
 // Blur (vertical)
@@ -290,10 +301,7 @@ void SceneBasic_Uniform::drawScene() {
 
 	prog.use();
 	// Set light position
-
-
-
-	vec4 lightPos = vec4(-15.0f, 4.0f, -12.0f, 1.0f);
+	vec4 lightPos = vec4(-20.0f, 8.0f, -25.0f, 1.0f);
 	vec4 lightPos2 = vec4(8.0f, 3.0f, 0.0f, 1.0f);
 	vec4 fireLightPos = vec4(0.0f, 2.5f, 4.0f, 1.0f); // Inside barrel
 	prog.setUniform("Lights[0].Position", view * lightPos);
@@ -301,9 +309,9 @@ void SceneBasic_Uniform::drawScene() {
 	prog.setUniform("Lights[2].Position", view * fireLightPos);
 
 	// Animte fire light inside barrel
-	float fireIntensity = 1.0f + 0.5f * sin(tPrev * 5.0f); // Flicker 
+	float fireIntensity = 1.0f + 0.75f * sin(tPrev * 5.0f); // Flicker 
 	prog.setUniform("Lights[2].L", vec3(0.0f));
-	prog.setUniform("Lights[2].L", vec3(fireIntensity) * 0.25f); // Update fire light intensity
+	//prog.setUniform("Lights[2].L", vec3(fireIntensity) * 0.35f); // Update fire light intensity
 
 	// Set material properties
 	vec3 diffuseColor = vec3(0.5f, 0.0f, 0.0f);
@@ -313,7 +321,7 @@ void SceneBasic_Uniform::drawScene() {
 	prog.setUniform("Material.Kd", diffuseColor);
 	prog.setUniform("Material.Ks", specularColor);
 	prog.setUniform("Material.Ka", ambientColor);
-	prog.setUniform("Material.Shininess", 100.0f);
+	prog.setUniform("Material.Shininess", 75.0f);
 
 	// FLOOR
 	glActiveTexture(GL_TEXTURE0);
@@ -384,6 +392,62 @@ void SceneBasic_Uniform::drawScene() {
 	setMatrices();
 	plane.render();
 
+	// ROOF
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, wallDiffuseTexture);
+	glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_2D, wallNormalTexture);
+
+	prog.setUniform("Textures.diffuseTexture", 0);
+	prog.setUniform("Textures.normalTexture", 1);
+
+
+	model = mat4(1.0f);
+	model = glm::translate(model, vec3(6.0f, 8.0f, 0.0f));
+	model = glm::rotate(model, glm::radians(83.0f), vec3(1, 0, 0));
+	model = glm::rotate(model, glm::radians(3.0f), vec3(0, 1, 0));
+	model = glm::scale(model, vec3(0.6f, 1.0f, 0.3f));
+	setMatrices();
+	roof->render();
+
+
+	model = mat4(1.0f);
+	model = glm::translate(model, vec3(-12.0f, 7.5f, 0.0f));   // horizontal mirror (X)
+	model = glm::rotate(model, glm::radians(180.0f), vec3(1, 0, 0));
+	model = glm::rotate(model, glm::radians(83.0f), vec3(1, 0, 0)); // vertical flip
+	model = glm::rotate(model, glm::radians(3.0f), vec3(0, 1, 0));  // mirror tilt
+
+	model = glm::scale(model, vec3(0.6f, 1.0f, 0.3f));
+	setMatrices();
+	roof->render();
+
+	model = mat4(1.0f);
+	model = glm::translate(model, vec3(-3.0f, 7.5f, 10.0f));   // horizontal mirror (X)
+	model = glm::rotate(model, glm::radians(180.0f), vec3(1, 0, 0));
+	model = glm::rotate(model, glm::radians(90.0f), vec3(0, 1, 0));
+	model = glm::rotate(model, glm::radians(83.0f), vec3(1, 0, 0)); // vertical flip
+	model = glm::rotate(model, glm::radians(3.0f), vec3(0, 1, 0));  // mirror tilt
+
+	model = glm::scale(model, vec3(0.6f, 1.0f, 0.3f));
+	setMatrices();
+	roof->render();
+
+	// BARRIER
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, barrierDiffuseTexture);
+	glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_2D, barrierNormalTexture);
+	prog.setUniform("Textures.diffuseTexture", 0);
+	prog.setUniform("Textures.normalTexture", 1);
+
+	model = mat4(1.0f);
+	model = glm::translate(model, vec3(-1.0f, 1.3f, 2.0f));
+	model = glm::scale(model, vec3(2.5f));
+	model = glm::rotate(model, glm::radians(15.0f), vec3(0, 1, 0));
+	setMatrices();
+
+	barrier->render();
+
 	// BARREL
 	prog.setUniform("Lights[2].L", vec3(fireIntensity)); // Update fire light intensity
 	glActiveTexture(GL_TEXTURE0);
@@ -394,7 +458,7 @@ void SceneBasic_Uniform::drawScene() {
 	prog.setUniform("Textures.diffuseTexture", 0);
 	prog.setUniform("Textures.normalTexture", 1);
 	model = mat4(1.0f);
-	model = glm::translate(model, vec3(0.0f, 2.0f, 4.0f));
+	model = glm::translate(model, vec3(0.0f, 1.3f, 4.0f));
 	model = glm::scale(model, vec3(3.0f));
 
 	setMatrices();
@@ -463,7 +527,10 @@ void SceneBasic_Uniform::userInput(GLFWwindow* WindowIn)
 		cameraPos += glm::normalize(glm::cross(cameraTarget, cameraUp)) * cameraSpeed * deltaTime; // Move right
 		
 	}
-	//view = glm::lookAt(cameraPos, cameraPos + cameraTarget, cameraUp);
+
+	
+
+
 
 	// Handle mouse input for camera rotation
 	float sensitivity = 0.1f;
@@ -550,8 +617,6 @@ void SceneBasic_Uniform::setupFBO()
 
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-	// 
-
 }
 
 void SceneBasic_Uniform::computeLogAveLuminance()
@@ -566,6 +631,7 @@ void SceneBasic_Uniform::computeLogAveLuminance()
 		float lum = glm::dot(vec3(texData[i * 3], texData[i * 3 + 1], texData[i * 3 + 2]), vec3(0.2126f, 0.7152f, 0.0722f));
 		sum += logf(0.00001f + lum);
 	}
+
 	prog.setUniform("AvgLum", expf(sum / size));
 }
 

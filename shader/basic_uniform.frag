@@ -12,7 +12,7 @@ layout (binding = 2) uniform sampler2D BlurTex2;
 // HDR
 uniform int Pass;
 uniform float AvgLum;
-uniform float Exposure = 0.35;
+uniform float Exposure = 0.15;
 uniform float White = 0.928;
 
 // Bloom
@@ -88,6 +88,7 @@ vec3 blinnPhong(LightInfo light, vec3 position, vec3 normal, vec3 texture) {
         vec3 h = normalize(s + v);
         specular = Material.Ks * pow(max(dot(h, normal), 0.0), Material.Shininess);
     }
+
     return ambient + (diffuse + specular) * light.L;
 }
 
@@ -168,29 +169,29 @@ vec4 Pass4() {
 // Tonemapping
 vec4 Pass5() {
     vec4 color = texture(HDRTex, TexCoord);
+    vec3 bloom = texture(BlurTex1, TexCoord).rgb;
 
     vec3 xyzCol = rgb2xyz * color.rgb;
     float xyzSum = xyzCol.x + xyzCol.y + xyzCol.z;
 
     vec3 xyYCol = vec3(xyzCol.x / xyzSum, xyzCol.y / xyzSum, xyzCol.y);
 
-    float L = (Exposure * xyYCol.z) / AvgLum;
-    L = (L * (1.0 + L / (White * White))) / (1.0 + L);
+    float Lum = xyYCol.z;
+    float lumFactor = Exposure * (Lum / AvgLum);
+    lumFactor = (lumFactor * (1.0 + lumFactor / (White * White))) / (1.0 + lumFactor);
 
 
-    xyzCol.x = (L * xyYCol.x) / xyYCol.y;
-    xyzCol.y = L;
-    xyzCol.z = (L * (1.0 - xyYCol.x - xyYCol.y)) / xyYCol.y;
 
-    // Convert back to RGB
-    vec4 toneMappedColor = vec4(xyz2rgb * xyzCol, 1.0);
-    vec4 blurTex = texture(BlurTex1, TexCoord);
+    xyzCol = xyzCol * (lumFactor / Lum);
 
-    //FragColor = color;
-    return  toneMappedColor + blurTex;
+    vec3 toneMappedColor = xyz2rgb * xyzCol;
+
+    toneMappedColor += bloom;
+
+    return vec4(toneMappedColor, color.a);
 }
 
-
+float Gamma = 2.2f;
 
 void main()
 {
@@ -199,7 +200,8 @@ void main()
     else if(Pass == 2) FragColor = Pass2();
     else if(Pass == 3) FragColor = Pass3();
     else if(Pass == 4) FragColor = Pass4();
-    else if(Pass == 5) FragColor = Pass5();
+    //else if(Pass == 5) FragColor = Pass5();
+    else if(Pass == 5) FragColor = vec4(pow(vec3(Pass5()), vec3(1.0 / Gamma)), 1.0);
 
 
 }

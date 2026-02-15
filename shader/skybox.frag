@@ -19,5 +19,7 @@ void main()
     
     vec3 color = texture(SkyBoxTexture, normalize(flippedVec)).rgb;
     color = pow(color, vec3(1.0/2.2)); // gamma correction
-    FragColor = vec4(color, 1.0);
+
+    
+    FragColor = vec4(color * 0.5, 1.0);
 }
